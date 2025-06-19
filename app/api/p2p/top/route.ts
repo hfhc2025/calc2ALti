@@ -1,42 +1,39 @@
 import { NextResponse } from 'next/server'
 
-type Offer = {
-  price: number            // precio por 1 USDT
-  available: number        // USDT disponibles en el aviso
-  minLimit: number         // compra mínima en fiat
-  advertiser: string       // alias del comerciante
-}
+type Offer = { price: string; surplusAmount: string; advertiser: { nickName: string } }
 
-const binanceBody = (fiat: string, trade: 'BUY' | 'SELL'): object => ({
+const body = (fiat: string, trade: 'BUY' | 'SELL') => ({
   page: 1,
-  rows: 10,               // ← top-10
+  rows: 10,
   asset: 'USDT',
   tradeType: trade,
   fiat,
-  payTypes: [],           // o ['Santander'] si quieres filtrar
+  payTypes: [],
   publisherType: null,
-  merchantCheck: true     // true = solo merchants verificados
+  merchantCheck: true,
 })
 
-async function fetchOffers(body: object): Promise<Offer[]> {
-  const res  = await fetch(
-    'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search',
-    { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
-  )
+async function fetchOffers(payload: object) {
+  const res  = await fetch('https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
   const json = await res.json()
-
-  return (json.data ?? []).map((d: any) => ({
-    price     : Number(d.adv.price),
-    available : Number(d.adv.surplusAmount),
-    minLimit  : Number(d.adv.minSingleTransAmount),
-    advertiser: d.advertiser.nickName
+  return (json.data as Offer[]).map(o => ({
+    price: Number(o.price),
+    available: Number(o.surplusAmount),
+    advertiser: o.advertiser.nickName,
   }))
 }
 
 export async function GET() {
   const [buyCLP, sellBOB] = await Promise.all([
-    fetchOffers(binanceBody('CLP', 'BUY')),    // comprar USDT con CLP → precio más bajo
-    fetchOffers(binanceBody('BOB', 'SELL'))    // vender USDT y recibir BOB → precio más alto
+    // 🔹 COMPRAR USDT CON CLP ⇒ anuncios SELL-CLP (nos venden USDT)
+    fetchOffers(body('CLP', 'SELL')),
+
+    // 🔸 VENDER USDT Y RECIBIR BOB ⇒ anuncios BUY-BOB (nos compran USDT)
+    fetchOffers(body('BOB', 'BUY')),
   ])
 
   return NextResponse.json({ buyCLP, sellBOB })
