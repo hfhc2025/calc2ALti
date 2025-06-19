@@ -1,27 +1,48 @@
 {
   "compilerOptions": {
+    /* === Target & módulos === */
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+
+    /* === Paths & aliases === */
+    "baseUrl": ".",            // <- habilita los paths relativos al proyecto
+    "paths": {
+      "@/*": ["./*"]            // @/hooks → ./hooks, @/components → ./components, etc.
+    },
+
+    /* === Strict mode & helpers === */
+    "strict": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "noEmit": true,
     "incremental": true,
+
+    /* === JSX / React === */
+    "jsx": "preserve",
+
+    /* === Libs === */
+    "lib": ["dom", "dom.iterable", "esnext"],
+
+    /* === Plugins (Next.js) === */
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "paths": {
-      "@/*": ["./*"]
-    }
+    ]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+
+  /* === Archivos incluidos === */
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+
+  /* === Exclusiones === */
   "exclude": ["node_modules"]
 }

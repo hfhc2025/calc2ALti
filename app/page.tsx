@@ -1,103 +1,122 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useEffect, useState } from 'react'
+import { useTop10 } from './hooks/useTop'
+import { Card } from './components/Card'
+import { OffersTable } from './components/OffersTable'
+
+/* ────────  SVG Flags  ──────── */
+function ChileFlag({ size = 32 }: { size?: number }) {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <svg width={size} height={size * 2 / 3} viewBox="0 0 60 40">
+      <rect width="60" height="20" y="20" fill="#D52B1E" />
+      <rect width="60" height="20" fill="white" />
+      <rect width="20" height="20" fill="#0033A0" />
+      <polygon
+        fill="white"
+        points="10,3 11.76,8.09 17.09,8.09 12.67,11.18 14.43,16.27 10,13.18 5.57,16.27 7.33,11.18 2.91,8.09 8.24,8.09"
+      />
+    </svg>
+  )
+}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+function BoliviaFlag({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size * 2 / 3} viewBox="0 0 60 40">
+      <rect width="60" height="13.33" y="0" fill="#D52B1E" />
+      <rect width="60" height="13.33" y="13.33" fill="#FFD700" />
+      <rect width="60" height="13.33" y="26.66" fill="#007A33" />
+    </svg>
+  )
+}
+
+/* ────────  Helpers  ──────── */
+const cleanNumber = (raw: string) =>
+  Number(raw.replace(/[\.\s,]/g, '')) || 0
+
+const fmt = (n: number) =>
+  n.toLocaleString('es-CL', { maximumFractionDigits: 2 })
+
+/* ────────  Página  ──────── */
+export default function Page() {
+  const [clpInput, setClpInput] = useState('')
+
+  // Precios CLP⇄USDT, BOB⇄USDT y oficial
+  const [rates, setRates] = useState<{
+    clpPerUSDT: number
+    bobParaleloPerUSDT: number
+    bobOfficialPerUSDT: number
+  }>()
+  // Arrays top-10 para buscar el mejor precio de compra y venta
+  const { offers } = useTop10()
+
+  /* Fetch precios básicos cada 30 s */
+  useEffect(() => {
+    const load = () => fetch('/api/p2p').then(r => r.json()).then(setRates)
+    load()
+    const id = setInterval(load, 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  /* ───── Cálculo principal ───── */
+  const amountClp = cleanNumber(clpInput)
+
+  const bestBuyPrice = offers?.buyCLP?.length
+    ? Math.min(...offers.buyCLP.map(o => o.price))
+    : NaN                                   // precio + barato para comprar USDT
+
+  const bestSellPrice = offers?.sellBOB?.length
+    ? Math.max(...offers.sellBOB.map(o => o.price))
+    : NaN                                   // precio + caro para vender USDT
+
+  const usdt        = amountClp && !isNaN(bestBuyPrice) ? amountClp / bestBuyPrice : 0
+  const bobParalelo = !isNaN(bestSellPrice)             ? usdt * bestSellPrice    : 0
+  const bobOficial  = rates                              ? usdt * rates.bobOfficialPerUSDT : 0
+
+  return (
+    <main className="min-h-screen bg-[#F9FAFB] text-gray-800 p-6 flex flex-col items-center">
+      {/* Encabezado */}
+      <h1 className="text-3xl md:text-4xl font-bold text-[#4F46E5] mb-1">
+        Calculadora Altius
+      </h1>
+      <p className="text-sm text-gray-500 mb-6 text-center">
+        Consulta en tiempo real el mejor tipo de cambio entre Chile y Bolivia.
+      </p>
+
+      {/* Input con banderas */}
+      <div className="bg-white p-4 rounded-xl shadow flex items-center justify-between gap-4 w-80 md:w-96 mb-6">
+        <ChileFlag size={28} />
+        <input
+          className="flex-1 text-center border-none outline-none text-xl font-medium placeholder:text-gray-400"
+          placeholder="Monto en CLP"
+          value={clpInput}
+          onChange={e => setClpInput(e.target.value)}
+        />
+        <BoliviaFlag size={28} />
+      </div>
+
+      {/* Resultados */}
+      {amountClp > 0 && (
+        <div className="grid gap-4 w-80 md:w-96 mb-10">
+          <Card label="USDT obtenidos" value={fmt(usdt)} />
+          <Card label="BOB (paralelo)" value={fmt(bobParalelo)} />
+          <Card label="BOB (oficial)" value={fmt(bobOficial)} />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      )}
+
+      {/* Tablas top-10 */}
+      {offers && (
+        <div className="grid md:grid-cols-2 gap-6 w-full max-w-5xl">
+          <OffersTable
+            title="Top 10 – Comprar USDT con CLP"
+            rows={offers.buyCLP}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+          <OffersTable
+            title="Top 10 – Vender USDT por BOB"
+            rows={offers.sellBOB}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+        </div>
+      )}
+    </main>
+  )
 }
