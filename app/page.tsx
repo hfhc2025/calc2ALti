@@ -242,8 +242,13 @@ function useMarketData() {
 /* ────────  Main Dashboard Component  ──────── */
 export default function FinancialDashboard() {
   const [clpInput, setClpInput] = useState('')
-  const [lastUpdate] = useState(new Date())
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const marketData = useMarketData()
+
+  // Fix hydration mismatch by setting time on client side only
+  useEffect(() => {
+    setLastUpdate(new Date())
+  }, [])
 
   const amountClp = cleanNumber(clpInput)
   const usdt = amountClp ? amountClp / marketData.rates.clpPerUSDT : 0
@@ -268,7 +273,7 @@ export default function FinancialDashboard() {
               </div>
               <div className="flex items-center gap-2 text-gray-500">
                 <Clock className="w-4 h-4" />
-                <span>{lastUpdate.toLocaleTimeString()}</span>
+                <span>{lastUpdate ? lastUpdate.toLocaleTimeString() : '--:--:--'}</span>
               </div>
             </div>
           </div>
@@ -341,46 +346,74 @@ export default function FinancialDashboard() {
               Calculadora de Conversión
             </h3>
             <div className="space-y-4">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="grid grid-cols-3 gap-4 items-center">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl p-6 shadow-sm">
+                <div className="grid grid-cols-3 gap-6 items-center">
                   <div className="text-center">
-                    <ChileFlag size={32} />
-                    <div className="mt-2 text-sm font-medium">CLP</div>
+                    <div className="mx-auto mb-3 p-2 bg-white rounded-lg shadow-sm border border-gray-200 w-fit">
+                      <ChileFlag size={40} />
+                    </div>
+                    <div className="text-sm font-semibold text-gray-700">Pesos Chilenos</div>
+                    <div className="text-xs text-gray-500">CLP</div>
                   </div>
-                  <div>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg opacity-20"></div>
                     <input
                       type="text"
-                      className="w-full text-center bg-white border border-gray-300 rounded-md px-3 py-2 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="0"
+                      className="relative w-full text-center bg-white border-2 border-blue-300 rounded-lg px-4 py-4 text-xl font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-200 shadow-sm"
+                      placeholder="Ingresa monto"
                       value={clpInput}
                       onChange={e => setClpInput(e.target.value)}
                     />
+                    <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-md font-medium">
+                      CLP
+                    </div>
                   </div>
                   <div className="text-center">
-                    <BoliviaFlag size={32} />
-                    <div className="mt-2 text-sm font-medium">BOB</div>
+                    <div className="mx-auto mb-3 p-2 bg-white rounded-lg shadow-sm border border-gray-200 w-fit">
+                      <BoliviaFlag size={40} />
+                    </div>
+                    <div className="text-sm font-semibold text-gray-700">Bolivianos</div>
+                    <div className="text-xs text-gray-500">BOB</div>
                   </div>
                 </div>
               </div>
               
               {amountClp > 0 && (
-                <div className="space-y-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">USDT Equivalente:</span>
-                    <span className="font-semibold">{fmt(usdt)} USDT</span>
+                <div className="space-y-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 shadow-sm">
+                  <div className="text-center mb-4">
+                    <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                      <ArrowRightLeft className="w-4 h-4" />
+                      Resultado de Conversión
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">BOB (Paralelo):</span>
-                    <span className="font-semibold text-green-600">{fmt(bobParalelo)} BOB</span>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-600">USDT Equivalente:</span>
+                        <span className="text-lg font-bold text-gray-900">{fmt(usdt)} USDT</span>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200 shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-600">BOB (Mercado Paralelo):</span>
+                        <span className="text-lg font-bold text-green-600">{fmt(bobParalelo)} BOB</span>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-lg p-4 border border-blue-200 shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-600">BOB (Tipo Oficial):</span>
+                        <span className="text-lg font-bold text-blue-600">{fmt(bobOficial)} BOB</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">BOB (Oficial):</span>
-                    <span className="font-semibold text-blue-600">{fmt(bobOficial)} BOB</span>
-                  </div>
-                  <div className="pt-2 border-t border-blue-200">
-                    <span className="text-sm text-green-700 font-medium">
-                      Diferencia: +{fmt(bobParalelo - bobOficial)} BOB ({((bobParalelo/bobOficial - 1) * 100).toFixed(1)}%)
-                    </span>
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 text-center">
+                    <div className="text-sm font-medium text-yellow-800 mb-1">💰 Ganancia por Arbitraje</div>
+                    <div className="text-lg font-bold text-green-700">
+                      +{fmt(bobParalelo - bobOficial)} BOB
+                    </div>
+                    <div className="text-sm text-yellow-700">
+                      ({((bobParalelo/bobOficial - 1) * 100).toFixed(1)}% más que el tipo oficial)
+                    </div>
                   </div>
                 </div>
               )}
