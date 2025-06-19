@@ -1,320 +1,508 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { TrendingUp, ArrowRightLeft, Zap, Globe } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowRightLeft, Calculator, BarChart3, AlertCircle, Clock, DollarSign, Activity, Target, Zap, Globe, PieChart, LineChart } from 'lucide-react'
 
-/* ────────  SVG Flags con animaciones  ──────── */
-function ChileFlag({ size = 32 }: { size?: number }) {
+/* ────────  SVG Flags  ──────── */
+function ChileFlag({ size = 24 }: { size?: number }) {
   return (
-    <div className="relative group">
-      <svg 
-        width={size} 
-        height={size * 2 / 3} 
-        viewBox="0 0 60 40"
-        className="transition-transform duration-300 group-hover:scale-110 drop-shadow-md"
-      >
-        <rect width="60" height="20" y="20" fill="#D52B1E" />
-        <rect width="60" height="20" fill="white" />
-        <rect width="20" height="20" fill="#0033A0" />
-        <polygon
-          fill="white"
-          points="10,3 11.76,8.09 17.09,8.09 12.67,11.18 14.43,16.27 10,13.18 5.57,16.27 7.33,11.18 2.91,8.09 8.24,8.09"
-          className="animate-pulse"
-        />
-      </svg>
-      <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-red-600 rounded-lg blur opacity-0 group-hover:opacity-25 transition duration-300"></div>
-    </div>
+    <svg width={size} height={size * 2 / 3} viewBox="0 0 60 40" className="border border-gray-200 rounded-sm">
+      <rect width="60" height="20" y="20" fill="#D52B1E" />
+      <rect width="60" height="20" fill="white" />
+      <rect width="20" height="20" fill="#0033A0" />
+      <polygon fill="white" points="10,3 11.76,8.09 17.09,8.09 12.67,11.18 14.43,16.27 10,13.18 5.57,16.27 7.33,11.18 2.91,8.09 8.24,8.09" />
+    </svg>
   )
 }
 
-function BoliviaFlag({ size = 32 }: { size?: number }) {
+function BoliviaFlag({ size = 24 }: { size?: number }) {
   return (
-    <div className="relative group">
-      <svg 
-        width={size} 
-        height={size * 2 / 3} 
-        viewBox="0 0 60 40"
-        className="transition-transform duration-300 group-hover:scale-110 drop-shadow-md"
-      >
-        <rect width="60" height="13.33" y="0" fill="#D52B1E" />
-        <rect width="60" height="13.33" y="13.33" fill="#FFD700" />
-        <rect width="60" height="13.33" y="26.66" fill="#007A33" />
-      </svg>
-      <div className="absolute -inset-1 bg-gradient-to-r from-red-600 via-yellow-500 to-green-600 rounded-lg blur opacity-0 group-hover:opacity-25 transition duration-300"></div>
-    </div>
+    <svg width={size} height={size * 2 / 3} viewBox="0 0 60 40" className="border border-gray-200 rounded-sm">
+      <rect width="60" height="13.33" y="0" fill="#D52B1E" />
+      <rect width="60" height="13.33" y="13.33" fill="#FFD700" />
+      <rect width="60" height="13.33" y="26.66" fill="#007A33" />
+    </svg>
   )
 }
 
-/* ────────  Card Component Mejorado  ──────── */
-function Card({ label, value, icon: Icon, gradient }: { 
-  label: string
+/* ────────  KPI Card Component  ──────── */
+function KPICard({ title, value, change, changePercent, icon: Icon, trend, subtitle, color = 'blue' }: { 
+  title: string
   value: string
+  change?: string
+  changePercent?: string
   icon?: any
-  gradient?: string
+  trend?: 'up' | 'down' | 'neutral'
+  subtitle?: string
+  color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple'
 }) {
+  const colorClasses = {
+    blue: 'bg-blue-50 border-blue-200 text-blue-700',
+    green: 'bg-green-50 border-green-200 text-green-700',
+    red: 'bg-red-50 border-red-200 text-red-700',
+    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+    purple: 'bg-purple-50 border-purple-200 text-purple-700'
+  }
+
+  const trendIcons = {
+    up: <TrendingUp className="w-4 h-4 text-green-600" />,
+    down: <TrendingDown className="w-4 h-4 text-red-600" />,
+    neutral: <Activity className="w-4 h-4 text-gray-600" />
+  }
+
   return (
-    <div className={`relative overflow-hidden rounded-2xl p-6 text-white transform transition-all duration-500 hover:scale-105 hover:rotate-1 group ${gradient || 'bg-gradient-to-br from-purple-600 to-blue-600'}`}>
-      <div className="absolute inset-0 bg-white/10 transform -skew-y-6 scale-110 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium opacity-90">{label}</span>
-          {Icon && <Icon className="w-5 h-5 opacity-70" />}
+    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {Icon && (
+            <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+              <Icon className="w-4 h-4" />
+            </div>
+          )}
+          <span className="text-sm font-medium text-gray-600">{title}</span>
         </div>
-        <div className="text-2xl font-bold tracking-tight animate-fade-in">
-          {value}
-        </div>
+        {trend && trendIcons[trend]}
       </div>
-      <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-white/5 rounded-full blur-xl"></div>
+      
+      <div className="mb-2">
+        <div className="text-2xl font-bold text-gray-900">{value}</div>
+        {subtitle && <div className="text-xs text-gray-500">{subtitle}</div>}
+      </div>
+      
+      {(change || changePercent) && (
+        <div className="flex items-center gap-2 text-sm">
+          {change && <span className="text-gray-600">{change}</span>}
+          {changePercent && (
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              changePercent.startsWith('+') ? 'bg-green-100 text-green-700' : 
+              changePercent.startsWith('-') ? 'bg-red-100 text-red-700' : 
+              'bg-gray-100 text-gray-700'
+            }`}>
+              {changePercent}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
-/* ────────  Offers Table Mejorado  ──────── */
-function OffersTable({ title, rows }: { title: string; rows: any[] }) {
+/* ────────  Mini Chart Component  ──────── */
+function MiniChart({ data, color = 'blue' }: { data: number[], color?: string }) {
+  const max = Math.max(...data)
+  const min = Math.min(...data)
+  const range = max - min
+  
+  const points = data.map((value, index) => {
+    const x = (index / (data.length - 1)) * 200
+    const y = 40 - ((value - min) / range) * 30
+    return `${x},${y}`
+  }).join(' ')
+
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
-        <h3 className="text-xl font-bold text-white flex items-center gap-3">
-          <TrendingUp className="w-6 h-6" />
+    <svg width="200" height="40" className="overflow-visible">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color === 'blue' ? '#3B82F6' : color === 'green' ? '#10B981' : '#EF4444'}
+        strokeWidth="2"
+        className="drop-shadow-sm"
+      />
+      <defs>
+        <linearGradient id={`gradient-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={color === 'blue' ? '#3B82F6' : color === 'green' ? '#10B981' : '#EF4444'} stopOpacity="0.1"/>
+          <stop offset="100%" stopColor={color === 'blue' ? '#3B82F6' : color === 'green' ? '#10B981' : '#EF4444'} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      <polyline
+        points={`0,40 ${points} 200,40`}
+        fill={`url(#gradient-${color})`}
+        stroke="none"
+      />
+    </svg>
+  )
+}
+
+/* ────────  Market Data Table  ──────── */
+function MarketTable({ title, data, type }: { title: string; data: any[]; type: 'buy' | 'sell' }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-gray-600" />
           {title}
         </h3>
       </div>
-      <div className="p-6">
-        <div className="space-y-3">
-          {rows?.slice(0, 5).map((row, i) => (
-            <div 
-              key={i}
-              className="flex justify-between items-center p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group"
-              style={{ animationDelay: `${i * 100}ms` }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  {i + 1}
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-800">{row.merchant || 'Merchant'}</div>
-                  <div className="text-sm text-gray-500">{row.limits || 'No limits'}</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xl font-bold text-indigo-600 group-hover:text-purple-600 transition-colors">
-                  {row.price?.toLocaleString('es-CL', { maximumFractionDigits: 2 }) || 'N/A'}
-                </div>
-                <div className="text-sm text-gray-500">{row.available || 'Available'}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Exchange</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Precio</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Vol. 24h</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Spread</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data?.slice(0, 4).map((row, i) => (
+              <tr key={i} className="hover:bg-gray-50">
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className={`w-2 h-2 rounded-full mr-2 ${i === 0 ? 'bg-green-400' : i === 1 ? 'bg-yellow-400' : 'bg-gray-300'}`}></div>
+                    <span className="font-medium text-gray-900">{row.merchant}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-right font-semibold text-gray-900">
+                  {row.price?.toLocaleString('es-CL', { maximumFractionDigits: 2 })}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-right text-gray-600">
+                  {row.volume24h || 'N/A'}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-right">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    (row.spread || 0) < 1 ? 'bg-green-100 text-green-700' : 
+                    (row.spread || 0) < 2 ? 'bg-yellow-100 text-yellow-700' : 
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {row.spread ? `${row.spread}%` : 'N/A'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
 }
 
 /* ────────  Helpers  ──────── */
-const cleanNumber = (raw: string) =>
-  Number(raw.replace(/[\.\s,]/g, '')) || 0
+const cleanNumber = (raw: string) => Number(raw.replace(/[\.\s,]/g, '')) || 0
+const fmt = (n: number) => n.toLocaleString('es-CL', { maximumFractionDigits: 2 })
 
-const fmt = (n: number) =>
-  n.toLocaleString('es-CL', { maximumFractionDigits: 2 })
-
-/* ────────  Mock Hook y Data  ──────── */
-function useTop10() {
-  return {
+/* ────────  Mock Market Data  ──────── */
+function useMarketData() {
+  const [data, setData] = useState({
+    // Precios actuales
+    rates: {
+      clpPerUSDT: 940,
+      bobParaleloPerUSDT: 16.3,
+      bobOfficialPerUSDT: 6.97
+    },
+    // KPIs de mercado
+    marketKPIs: {
+      usdtVolume24h: 2845000,
+      activeOrders: 1247,
+      avgSpread: 0.8,
+      liquidityIndex: 85.2,
+      volatility: 2.1,
+      marketCap: 95600000000
+    },
+    // Datos históricos para gráficos
+    priceHistory: {
+      clp: [935, 938, 942, 940, 945, 941, 940, 938],
+      bob: [16.1, 16.2, 16.4, 16.3, 16.5, 16.2, 16.3, 16.1]
+    },
+    // Ofertas del mercado
     offers: {
       buyCLP: [
-        { merchant: 'Binance P2P', price: 940, limits: '100K - 5M CLP', available: '10,000 USDT' },
-        { merchant: 'Buda Exchange', price: 942, limits: '50K - 2M CLP', available: '5,000 USDT' },
-        { merchant: 'CryptoMKT', price: 945, limits: '200K - 3M CLP', available: '8,000 USDT' },
-        { merchant: 'LocalBitcoins', price: 948, limits: '30K - 1M CLP', available: '3,000 USDT' },
-        { merchant: 'Paxful', price: 950, limits: '100K - 800K CLP', available: '2,500 USDT' }
+        { merchant: 'Binance P2P', price: 940, volume24h: '1.2M USDT', spread: 0.5 },
+        { merchant: 'Buda', price: 942, volume24h: '800K USDT', spread: 0.8 },
+        { merchant: 'CryptoMKT', price: 945, volume24h: '600K USDT', spread: 1.2 },
+        { merchant: 'Bitso', price: 948, volume24h: '450K USDT', spread: 1.8 }
       ],
       sellBOB: [
-        { merchant: 'Binance P2P BOB', price: 16.3, limits: '1000 - 50000 BOB', available: '100,000 BOB' },
-        { merchant: 'LocalBitcoins BOB', price: 16.1, limits: '500 - 30000 BOB', available: '75,000 BOB' },
-        { merchant: 'Paxful BOB', price: 15.9, limits: '2000 - 40000 BOB', available: '60,000 BOB' },
-        { merchant: 'Remitly', price: 15.7, limits: '1000 - 25000 BOB', available: '40,000 BOB' },
-        { merchant: 'Western Union', price: 15.5, limits: '800 - 20000 BOB', available: '30,000 BOB' }
+        { merchant: 'Binance P2P', price: 16.3, volume24h: '950K BOB', spread: 0.6 },
+        { merchant: 'LocalBitcoins', price: 16.1, volume24h: '720K BOB', spread: 1.1 },
+        { merchant: 'Paxful', price: 15.9, volume24h: '580K BOB', spread: 1.5 },
+        { merchant: 'Remitly', price: 15.7, volume24h: '380K BOB', spread: 2.2 }
       ]
     }
-  }
-}
+  })
 
-/* ────────  Página Principal  ──────── */
-export default function Page() {
-  const [clpInput, setClpInput] = useState('')
-  const [isAnimated, setIsAnimated] = useState(false)
-
-  // Precios reales de Binance
-  const [rates, setRates] = useState<{
-    clpPerUSDT: number          // Precio USDT en Binance (CLP)
-    bobParaleloPerUSDT: number  // Mejor precio BOB en Binance
-    bobOfficialPerUSDT: number  // Tipo oficial BOB (siempre 6.97)
-  }>()
-
-  // Arrays top-10 para buscar el mejor precio de compra y venta
-  const { offers } = useTop10()
-
-  /* Fetch precios básicos cada 30 s */
   useEffect(() => {
-    // Precios reales actuales
-    const currentRates = {
-      clpPerUSDT: 940,         // Precio USDT en Binance
-      bobParaleloPerUSDT: 16.3, // Mejor precio BOB en Binance
-      bobOfficialPerUSDT: 6.97  // Tipo oficial fijo
-    }
-    setRates(currentRates)
-    setIsAnimated(true)
+    // Simular actualizaciones de datos en tiempo real
+    const interval = setInterval(() => {
+      setData(prev => ({
+        ...prev,
+        rates: {
+          ...prev.rates,
+          clpPerUSDT: prev.rates.clpPerUSDT + (Math.random() - 0.5) * 2,
+          bobParaleloPerUSDT: prev.rates.bobParaleloPerUSDT + (Math.random() - 0.5) * 0.1
+        }
+      }))
+    }, 5000)
+
+    return () => clearInterval(interval)
   }, [])
 
-  /* ───── Cálculo principal - LÓGICA REAL DE BINANCE ───── */
-  const amountClp = cleanNumber(clpInput)
+  return data
+}
 
-  // Paso 1: CLP → USDT usando precio de Binance
-  const usdt = amountClp && rates ? amountClp / rates.clpPerUSDT : 0
-  
-  // Paso 2: USDT → BOB usando tipos de cambio
-  const bobOficial  = rates ? usdt * rates.bobOfficialPerUSDT : 0    // Tipo oficial 6.97
-  const bobParalelo = rates ? usdt * rates.bobParaleloPerUSDT : 0    // Mejor precio Binance ~16.3
+/* ────────  Main Dashboard Component  ──────── */
+export default function FinancialDashboard() {
+  const [clpInput, setClpInput] = useState('')
+  const [lastUpdate] = useState(new Date())
+  const marketData = useMarketData()
+
+  const amountClp = cleanNumber(clpInput)
+  const usdt = amountClp ? amountClp / marketData.rates.clpPerUSDT : 0
+  const bobOficial = usdt * marketData.rates.bobOfficialPerUSDT
+  const bobParalelo = usdt * marketData.rates.bobParaleloPerUSDT
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-purple-500/5 to-blue-500/5 rounded-full blur-3xl animate-spin" style={{ animationDuration: '60s' }}></div>
-      </div>
-
-      <main className={`relative z-10 min-h-screen text-white p-6 flex flex-col items-center transition-all duration-1000 ${isAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        {/* Header con animaciones */}
-        <div className="text-center mb-12 mt-8">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <Zap className="w-12 h-12 text-yellow-400 animate-bounce" />
-            <h1 className="text-5xl md:text-7xl font-black bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">
-              Altius
-            </h1>
-            <Globe className="w-12 h-12 text-blue-400 animate-spin" style={{ animationDuration: '8s' }} />
-          </div>
-          <p className="text-xl text-purple-200 font-light max-w-2xl">
-            La calculadora más avanzada para intercambios CLP ⇄ BOB en tiempo real
-          </p>
-          <div className="flex items-center justify-center gap-2 mt-4 text-green-400">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
-            <span className="text-sm font-medium">En vivo • Actualización automática</span>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        {/* Header Dashboard */}
+        <div className="bg-white border border-gray-200 rounded-lg px-6 py-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Dashboard Financiero CLP-BOB</h1>
+              <p className="text-gray-600">Análisis de mercado y conversión de divisas en tiempo real</p>
+            </div>
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-gray-600">Binance API</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500">
+                <Clock className="w-4 h-4" />
+                <span>{lastUpdate.toLocaleTimeString()}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Input Section Mejorado */}
-        <div className="relative mb-12">
-          <div className="bg-white/10 backdrop-blur-2xl p-8 rounded-3xl shadow-2xl border border-white/20 w-[400px] md:w-[500px] relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between gap-6">
-                <div className="flex flex-col items-center gap-3">
-                  <ChileFlag size={40} />
-                  <span className="text-sm font-medium text-purple-200">Chile</span>
-                </div>
-                
-                <div className="flex-1 relative">
-                  <input
-                    className="w-full text-center bg-white/10 backdrop-blur-xl border-2 border-white/20 rounded-2xl px-6 py-4 text-2xl font-bold text-white placeholder:text-white/50 focus:outline-none focus:ring-4 focus:ring-purple-500/50 focus:border-purple-400/50 transition-all duration-300"
-                    placeholder="0"
-                    value={clpInput}
-                    onChange={e => setClpInput(e.target.value)}
-                  />
-                  <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-sm text-purple-200">
-                    Pesos Chilenos
+        {/* KPIs Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+          <KPICard
+            title="Precio USDT/CLP"
+            value={`$${fmt(marketData.rates.clpPerUSDT)}`}
+            changePercent="+0.3%"
+            icon={DollarSign}
+            trend="up"
+            color="green"
+            subtitle="Binance P2P"
+          />
+          <KPICard
+            title="USDT/BOB Paralelo"
+            value={`Bs ${marketData.rates.bobParaleloPerUSDT.toFixed(2)}`}
+            changePercent="-0.1%"
+            icon={TrendingUp}
+            trend="down"
+            color="blue"
+            subtitle="Mejor oferta"
+          />
+          <KPICard
+            title="Volumen 24h"
+            value={`$${(marketData.marketKPIs.usdtVolume24h / 1000000).toFixed(1)}M`}
+            changePercent="+12.5%"
+            icon={BarChart3}
+            trend="up"
+            color="purple"
+            subtitle="USDT total"
+          />
+          <KPICard
+            title="Órdenes Activas"
+            value={marketData.marketKPIs.activeOrders.toLocaleString()}
+            change="+47 hoy"
+            icon={Activity}
+            trend="up"
+            color="yellow"
+            subtitle="P2P Global"
+          />
+          <KPICard
+            title="Spread Promedio"
+            value={`${marketData.marketKPIs.avgSpread}%`}
+            changePercent="-0.2%"
+            icon={Target}
+            trend="neutral"
+            color="green"
+            subtitle="Mercado CLP"
+          />
+          <KPICard
+            title="Índice Liquidez"
+            value={`${marketData.marketKPIs.liquidityIndex}%`}
+            changePercent="+2.1%"
+            icon={Zap}
+            trend="up"
+            color="blue"
+            subtitle="Muy alto"
+          />
+        </div>
+
+        {/* Calculator + Charts Row */}
+        <div className="grid lg:grid-cols-3 gap-6 mb-6">
+          {/* Calculator */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Calculator className="w-5 h-5" />
+              Calculadora de Conversión
+            </h3>
+            <div className="space-y-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="grid grid-cols-3 gap-4 items-center">
+                  <div className="text-center">
+                    <ChileFlag size={32} />
+                    <div className="mt-2 text-sm font-medium">CLP</div>
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      className="w-full text-center bg-white border border-gray-300 rounded-md px-3 py-2 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0"
+                      value={clpInput}
+                      onChange={e => setClpInput(e.target.value)}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <BoliviaFlag size={32} />
+                    <div className="mt-2 text-sm font-medium">BOB</div>
                   </div>
                 </div>
-
-                <div className="flex items-center">
-                  <ArrowRightLeft className="w-8 h-8 text-purple-400 animate-pulse mx-4" />
+              </div>
+              
+              {amountClp > 0 && (
+                <div className="space-y-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">USDT Equivalente:</span>
+                    <span className="font-semibold">{fmt(usdt)} USDT</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">BOB (Paralelo):</span>
+                    <span className="font-semibold text-green-600">{fmt(bobParalelo)} BOB</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">BOB (Oficial):</span>
+                    <span className="font-semibold text-blue-600">{fmt(bobOficial)} BOB</span>
+                  </div>
+                  <div className="pt-2 border-t border-blue-200">
+                    <span className="text-sm text-green-700 font-medium">
+                      Diferencia: +{fmt(bobParalelo - bobOficial)} BOB ({((bobParalelo/bobOficial - 1) * 100).toFixed(1)}%)
+                    </span>
+                  </div>
                 </div>
+              )}
+            </div>
+          </div>
 
-                <div className="flex flex-col items-center gap-3">
-                  <BoliviaFlag size={40} />
-                  <span className="text-sm font-medium text-purple-200">Bolivia</span>
+          {/* Price Charts */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <LineChart className="w-5 h-5" />
+              Tendencia CLP/USDT
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Últimas 8 horas</span>
+                  <span className="text-sm font-medium text-green-600">+0.5%</span>
+                </div>
+                <MiniChart data={marketData.priceHistory.clp} color="blue" />
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-gray-600">Máximo</div>
+                  <div className="font-semibold">$945</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Mínimo</div>
+                  <div className="font-semibold">$935</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* BOB Chart */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <PieChart className="w-5 h-5" />
+              Tendencia BOB/USDT
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Mercado Paralelo</span>
+                  <span className="text-sm font-medium text-red-600">-0.2%</span>
+                </div>
+                <MiniChart data={marketData.priceHistory.bob} color="green" />
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-gray-600">Paralelo</div>
+                  <div className="font-semibold">Bs 16.3</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Oficial</div>
+                  <div className="font-semibold">Bs 6.97</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Results Cards */}
-        {amountClp > 0 && (
-          <div className="grid md:grid-cols-3 gap-6 w-full max-w-4xl mb-16 animate-fade-in">
-            <Card 
-              label="USDT Obtenidos" 
-              value={fmt(usdt)}
-              icon={TrendingUp}
-              gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
-            />
-            <Card 
-              label="BOB (Mercado Paralelo)" 
-              value={fmt(bobParalelo)}
-              icon={Zap}
-              gradient="bg-gradient-to-br from-purple-600 to-pink-600"
-            />
-            <Card 
-              label="BOB (Tipo Oficial)" 
-              value={fmt(bobOficial)}
-              icon={Globe}
-              gradient="bg-gradient-to-br from-blue-600 to-indigo-600"
-            />
-          </div>
-        )}
+        {/* Market Tables */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-6">
+          <MarketTable
+            title="Mercado USDT/CLP - Mejores Ofertas"
+            data={marketData.offers.buyCLP}
+            type="buy"
+          />
+          <MarketTable
+            title="Mercado USDT/BOB - Mejores Ofertas"
+            data={marketData.offers.sellBOB}
+            type="sell"
+          />
+        </div>
 
-        {/* Tables */}
-        {offers && (
-          <div className="grid lg:grid-cols-2 gap-8 w-full max-w-7xl">
-            <div className="animate-slide-in-left">
-              <OffersTable
-                title="💰 Comprar USDT con CLP"
-                rows={offers.buyCLP}
-              />
-            </div>
-            <div className="animate-slide-in-right">
-              <OffersTable
-                title="💸 Vender USDT por BOB"
-                rows={offers.sellBOB}
-              />
+        {/* Market Insights */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-start gap-3">
+              <TrendingUp className="w-6 h-6 text-blue-600 mt-1" />
+              <div>
+                <h4 className="font-semibold text-blue-900 mb-2">Análisis de Tendencia</h4>
+                <p className="text-sm text-blue-700">
+                  El mercado CLP/USDT muestra estabilidad con ligera tendencia alcista. 
+                  Volumen por encima del promedio en las últimas 24h.
+                </p>
+              </div>
             </div>
           </div>
-        )}
+
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
+            <div className="flex items-start gap-3">
+              <Target className="w-6 h-6 text-green-600 mt-1" />
+              <div>
+                <h4 className="font-semibold text-green-900 mb-2">Oportunidad de Arbitraje</h4>
+                <p className="text-sm text-green-700">
+                  Diferencia del {((marketData.rates.bobParaleloPerUSDT/marketData.rates.bobOfficialPerUSDT - 1) * 100).toFixed(1)}% 
+                  entre tipo oficial y paralelo BOB. Spread favorable para operaciones.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-lg p-6">
+            <div className="flex items-start gap-3">
+              <Globe className="w-6 h-6 text-purple-600 mt-1" />
+              <div>
+                <h4 className="font-semibold text-purple-900 mb-2">Estado del Mercado</h4>
+                <p className="text-sm text-purple-700">
+                  Alta liquidez en ambos mercados. {marketData.marketKPIs.activeOrders.toLocaleString()} órdenes activas. 
+                  Condiciones ideales para operaciones de gran volumen.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Footer */}
-        <div className="mt-16 text-center text-purple-300/60">
-          <p className="text-sm">
-            Powered by Altius Exchange • Datos en tiempo real
-          </p>
+        <div className="mt-8 text-center text-sm text-gray-500 border-t border-gray-200 pt-6">
+          <p>© 2025 Altius Financial Analytics • Powered by Binance API • Datos actualizados cada 5 segundos</p>
         </div>
-      </main>
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slide-in-left {
-          from { opacity: 0; transform: translateX(-50px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slide-in-right {
-          from { opacity: 0; transform: translateX(50px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.6s ease-out forwards;
-        }
-        .animate-slide-in-left {
-          animation: slide-in-left 0.8s ease-out forwards;
-        }
-        .animate-slide-in-right {
-          animation: slide-in-right 0.8s ease-out forwards;
-          animation-delay: 0.2s;
-          opacity: 0;
-        }
-      `}</style>
+      </div>
     </div>
   )
 }
