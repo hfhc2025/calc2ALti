@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
@@ -85,7 +86,7 @@ const COUNTRIES = [
     currency: 'CLP',
     symbol: '$',
     flag: ChileFlag,
-    rate: 940
+    rate: 940 // Tasa P2P de referencia
   },
   {
     id: 'bo',
@@ -93,7 +94,7 @@ const COUNTRIES = [
     currency: 'BOB',
     symbol: 'Bs',
     flag: BoliviaFlag,
-    rate: 16.3
+    rate: 16.3 // Tasa P2P de referencia
   },
   {
     id: 'ar',
@@ -101,7 +102,7 @@ const COUNTRIES = [
     currency: 'ARS',
     symbol: '$',
     flag: ArgentinaFlag,
-    rate: 1200
+    rate: 1200 // Tasa P2P de referencia
   },
   {
     id: 'pe',
@@ -109,7 +110,7 @@ const COUNTRIES = [
     currency: 'PEN',
     symbol: 'S/',
     flag: PeruFlag,
-    rate: 3.85
+    rate: 3.85 // Tasa P2P de referencia
   },
   {
     id: 'co',
@@ -117,7 +118,7 @@ const COUNTRIES = [
     currency: 'COP',
     symbol: '$',
     flag: ColombiaFlag,
-    rate: 4200
+    rate: 4200 // Tasa P2P de referencia
   },
   {
     id: 'mx',
@@ -125,7 +126,7 @@ const COUNTRIES = [
     currency: 'MXN',
     symbol: '$',
     flag: MexicoFlag,
-    rate: 18.5
+    rate: 18.5 // Tasa P2P de referencia
   },
   {
     id: 'br',
@@ -133,7 +134,7 @@ const COUNTRIES = [
     currency: 'BRL',
     symbol: 'R$',
     flag: BrazilFlag,
-    rate: 5.2
+    rate: 5.2 // Tasa P2P de referencia
   }
 ]
 
@@ -205,7 +206,7 @@ function KPICard({ title, value, change, changePercent, icon: Icon, trend, subti
 function MiniChart({ data, color = 'blue', title }: { data: number[], color?: string, title?: string }) {
   const max = Math.max(...data)
   const min = Math.min(...data)
-  const range = max - min
+  const range = max - min === 0 ? 1 : max - min;
   
   const points = data.map((value, index) => {
     const x = (index / (data.length - 1)) * 200
@@ -215,7 +216,7 @@ function MiniChart({ data, color = 'blue', title }: { data: number[], color?: st
 
   const lastValue = data[data.length - 1]
   const prevValue = data[data.length - 2] || lastValue
-  const changePercent = ((lastValue - prevValue) / prevValue) * 100
+  const changePercent = prevValue !== 0 ? ((lastValue - prevValue) / prevValue) * 100 : 0;
 
   return (
     <div>
@@ -231,14 +232,14 @@ function MiniChart({ data, color = 'blue', title }: { data: number[], color?: st
         <polyline
           points={points}
           fill="none"
-          stroke={color === 'blue' ? '#4F46E5' : color === 'green' ? '#059669' : '#DC2626'} /* Colores más profundos */
-          strokeWidth="2.5" /* Mayor grosor de línea */
+          stroke={color === 'blue' ? '#4F46E5' : color === 'green' ? '#059669' : color === 'yellow' ? '#F59E0B' : color === 'purple' ? '#8B5CF6' : '#DC2626'}
+          strokeWidth="2.5"
           className="drop-shadow-sm"
         />
         <defs>
           <linearGradient id={`gradient-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={color === 'blue' ? '#6366F1' : color === 'green' ? '#10B981' : '#EF4444'} stopOpacity="0.15"/> /* Mayor opacidad */
-            <stop offset="100%" stopColor={color === 'blue' ? '#6366F1' : color === 'green' ? '#10B981' : '#EF4444'} stopOpacity="0"/>
+            <stop offset="0%" stopColor={color === 'blue' ? '#6366F1' : color === 'green' ? '#10B981' : color === 'yellow' ? '#FBBF24' : color === 'purple' ? '#A78BFA' : '#EF4444'} stopOpacity="0.15"/>
+            <stop offset="100%" stopColor={color === 'blue' ? '#6366F1' : color === 'green' ? '#10B981' : color === 'yellow' ? '#FBBF24' : color === 'purple' ? '#A78BFA' : '#EF4444'} stopOpacity="0"/>
           </linearGradient>
         </defs>
         <polyline
@@ -344,27 +345,80 @@ function CountrySelector({
   )
 }
 
-
-/* ────────  Currency Converter  ──────── */
+/* ────────  Currency Converter Component (Corrected) ──────── */
 function CurrencyConverter() {
   const [fromCountryId, setFromCountryId] = useState('cl')
   const [toCountryId, setToCountryId] = useState('bo')
-  const [amount, setAmount] = useState('')
+  const [amount, setAmount] = useState('75000') // Default amount for demo
+  const [window, setWindow] = useState<'15m' | '1h' | '1d'>('15m')
+  const [loading, setLoading] = useState(false)
+  const [apiRates, setApiRates] = useState<Record<string, number>>({})
+
+  const fromCountry = useMemo(() => COUNTRIES.find(c => c.id === fromCountryId) || COUNTRIES[0], [fromCountryId]);
+  const toCountry = useMemo(() => COUNTRIES.find(c => c.id === toCountryId) || COUNTRIES[1], [toCountryId]);
+
+  const cleanNumber = (raw: string) => {
+    if (!raw) return 0;
+    const cleaned = String(raw).replace(/\./g, '').replace(',', '.');
+    return parseFloat(cleaned) || 0;
+  };
   
-  const fromCountry = COUNTRIES.find(c => c.id === fromCountryId) || COUNTRIES[0]
-  const toCountry = COUNTRIES.find(c => c.id === toCountryId) || COUNTRIES[1]
+  const formatInput = (num: number) => {
+    if (isNaN(num) || num === 0) return '';
+    return num.toLocaleString('de-DE'); // Use a locale that uses dots for thousands
+  };
+
+  const fmt = (n: number) => n.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  useEffect(() => {
+    const getSimulatedRate = (currency: string, timeWindow: '15m' | '1h' | '1d') => {
+        const baseRates: Record<string, number> = {
+            CLP: 940, BOB: 6.91, ARS: 1210, PEN: 3.82, COP: 4250, MXN: 18.3, BRL: 5.15
+        };
+        const base = baseRates[currency] || 1;
+        switch (timeWindow) {
+            case '15m': return base * 1.002;
+            case '1h': return base * 1.000;
+            case '1d': return base * 0.998;
+            default: return base;
+        }
+    }
+    
+    const fetchApiRates = async () => {
+      setLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const fromRate = getSimulatedRate(fromCountry.currency, window);
+      const toRate = getSimulatedRate(toCountry.currency, window);
+
+      setApiRates({
+          [fromCountry.currency]: fromRate,
+          [toCountry.currency]: toRate
+      });
+
+      setLoading(false);
+    };
+
+    fetchApiRates();
+  }, [window, fromCountryId, toCountryId]);
+
+  const amountValue = cleanNumber(amount);
+
+  const fromApiRate = apiRates[fromCountry.currency] || fromCountry.rate;
+  const toApiRate = apiRates[toCountry.currency] || toCountry.rate;
+
+  // 1. Calcular USDT usando la tasa de la API (la mejor tasa de entrada)
+  const usdt = amountValue && fromApiRate ? amountValue / fromApiRate : 0;
+
+  // 2. El "Valor Convertido" principal usa la tasa P2P (paralela) guardada.
+  const convertedAmount = usdt * toCountry.rate;
+
+  // 3. Calcular el valor a la tasa de la API para la comparación.
+  const amountAtApiRate = usdt * toApiRate;
   
-  const cleanNumber = (raw: string) => Number(raw.replace(/[^\d]/g, '')) || 0
-  const fmt = (n: number) => n.toLocaleString('es-CL', { maximumFractionDigits: 2 })
-  
-  const amountValue = cleanNumber(amount)
-  const usdt = amountValue ? amountValue / fromCountry.rate : 0
-  const convertedAmount = usdt * toCountry.rate
-  
-  // Calcular ganancia por arbitraje (si es relevante)
-  const officialRate = fromCountry.id === 'cl' && toCountry.id === 'bo' ? 6.97 : null
-  const profit = officialRate ? (convertedAmount - (usdt * officialRate)) : 0
-  const profitPercent = officialRate ? ((convertedAmount / (usdt * officialRate) - 1) * 100) : 0
+  // 4. Calcular la ganancia/pérdida del arbitraje.
+  const arbitrageProfit = convertedAmount - amountAtApiRate;
+  const arbitrageProfitPercent = amountAtApiRate > 0 ? (arbitrageProfit / amountAtApiRate) * 100 : 0;
 
   return (
     <div className="bg-white border border-gray-100 rounded-2xl p-7 shadow-lg">
@@ -372,47 +426,59 @@ function CurrencyConverter() {
         <Calculator className="w-6 h-6 text-blue-600" />
         Calculadora de Conversión Multicurrency
       </h3>
-      
+
       <div className="space-y-7">
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-2xl p-7 shadow-inner">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
-            <CountrySelector 
-              countries={COUNTRIES} 
-              selectedId={fromCountryId} 
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-end gap-7">
+            <CountrySelector
+              countries={COUNTRIES}
+              selectedId={fromCountryId}
               onSelect={setFromCountryId}
               label="De"
             />
-            
-            <div className="flex flex-col justify-end">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="bg-white border border-gray-300 rounded-full p-2 shadow-md">
-                    <ArrowRightLeft className="w-6 h-6 text-gray-600" />
-                  </div>
-                </div>
+
+            <div className="flex flex-col justify-end relative">
                 <input
                   type="text"
-                  className="relative w-full text-center bg-white border-2 border-blue-300 rounded-2xl px-5 py-5 text-2xl font-extrabold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all duration-200 shadow-md"
-                  placeholder="Ingresa monto"
+                  className="relative w-full text-left bg-white border-2 border-blue-300 rounded-2xl pl-6 pr-24 py-5 text-2xl font-extrabold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-600 transition-all duration-200 shadow-md"
+                  placeholder="0"
                   value={amount}
-                  onChange={e => setAmount(e.target.value)}
+                  onChange={e => {
+                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                    setAmount(formatInput(Number(numericValue)));
+                  }}
+                  inputMode="numeric"
                 />
-                <div className="absolute top-4 right-4 bg-blue-600 text-white text-sm px-3 py-1.5 rounded-lg font-bold">
-                  {fromCountry.currency}
+                <div className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none">
+                  <span className="bg-blue-600 text-white text-sm px-3 py-1.5 rounded-lg font-bold">
+                    {fromCountry.currency}
+                  </span>
                 </div>
-              </div>
             </div>
-            
-            <CountrySelector 
-              countries={COUNTRIES} 
-              selectedId={toCountryId} 
+
+            <CountrySelector
+              countries={COUNTRIES}
+              selectedId={toCountryId}
               onSelect={setToCountryId}
               label="A"
             />
           </div>
+          
+          <div className="mt-5 flex justify-center gap-3">
+            <button onClick={() => setWindow('15m')} className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${window === '15m' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>15m</button>
+            <button onClick={() => setWindow('1h')} className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${window === '1h' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>1h</button>
+            <button onClick={() => setWindow('1d')} className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${window === '1d' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>1d</button>
+          </div>
         </div>
         
-        {amountValue > 0 && (
+        {loading && (
+          <div className="text-center text-blue-600 font-medium flex items-center justify-center gap-2 py-4">
+            <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            Consultando tasas...
+          </div>
+        )}
+
+        {amountValue > 0 && !loading && (
           <div className="space-y-5">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 shadow-md">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -421,35 +487,35 @@ function CurrencyConverter() {
                     <span className="text-base font-medium text-gray-600">USDT Equivalente:</span>
                     <span className="text-xl font-bold text-gray-900">{fmt(usdt)} USDT</span>
                   </div>
-                  <div className="text-sm text-gray-500">Tasa: 1 USDT = {fromCountry.symbol}{fmt(fromCountry.rate)}</div>
+                  <div className="text-sm text-gray-500">Tasa (API): 1 USDT = {fromCountry.symbol} {fromApiRate.toLocaleString('es-CL', {maximumFractionDigits: 2})}</div>
                 </div>
-                
+
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5 border border-green-200 shadow-sm">
                   <div className="flex justify-between items-center">
                     <span className="text-base font-medium text-gray-600">Valor Convertido:</span>
-                    <span className="text-xl font-bold text-green-700">
-                      {toCountry.symbol} {fmt(convertedAmount)}
-                    </span>
+                    <span className="text-xl font-bold text-green-700">{toCountry.symbol} {fmt(convertedAmount)}</span>
                   </div>
-                  <div className="text-sm text-gray-500 mt-2">Tasa: 1 USDT = {toCountry.symbol}{fmt(toCountry.rate)}</div>
+                  <div className="text-sm text-gray-500 mt-2">Tasa (P2P): 1 USDT = {toCountry.symbol} {toCountry.rate.toLocaleString('es-CL', {maximumFractionDigits: 2})}</div>
                 </div>
               </div>
             </div>
-            
-            {officialRate && profit > 0 && (
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-5 text-center shadow-md">
-                <div className="text-base font-medium text-yellow-800 mb-1">💰 Ganancia por Arbitraje</div>
-                <div className="text-xl font-bold text-green-700">
-                  +{fmt(profit)} {toCountry.currency}
+
+            {Math.abs(arbitrageProfit) > 0.01 && (
+              <div className={`bg-gradient-to-r border rounded-2xl p-5 text-center shadow-md ${arbitrageProfit > 0 ? 'from-yellow-50 to-orange-50 border-yellow-200' : 'from-red-50 to-pink-50 border-red-200'}`}>
+                <div className={`text-base font-medium mb-1 ${arbitrageProfit > 0 ? 'text-yellow-800' : 'text-red-800'}`}>
+                    💰 Oportunidad de Arbitraje vs Tasa API
                 </div>
-                <div className="text-sm text-yellow-700">
-                  ({profitPercent.toFixed(1)}% más que el tipo oficial)
+                <div className={`text-xl font-bold ${arbitrageProfit > 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {arbitrageProfit > 0 ? '+' : ''}{fmt(arbitrageProfit)} {toCountry.currency}
+                </div>
+                <div className={`text-sm ${arbitrageProfit > 0 ? 'text-yellow-700' : 'text-red-700'}`}>
+                   (Estás obteniendo un {Math.abs(arbitrageProfitPercent).toFixed(1)}% {arbitrageProfit > 0 ? 'más' : 'menos'} que con la tasa API de {toApiRate.toLocaleString('es-CL', {maximumFractionDigits: 2})})
                 </div>
               </div>
             )}
           </div>
         )}
-        
+
         <div className="text-center text-sm text-gray-500">
           <p>Tipos de cambio actualizados en tiempo real</p>
         </div>
@@ -461,7 +527,6 @@ function CurrencyConverter() {
 /* ────────  Mock Market Data  ──────── */
 function useMarketData() {
   const [data, setData] = useState({
-    // KPIs de mercado
     marketKPIs: {
       usdtVolume24h: 2845000,
       activeOrders: 1247,
@@ -471,14 +536,12 @@ function useMarketData() {
       marketCap: 95600000000,
       conversionVolume: 12450000
     },
-    // Datos históricos para gráficos
     priceHistory: {
       clp: [935, 938, 942, 940, 945, 941, 940, 938],
-      bob: [16.1, 16.2, 16.4, 16.3, 16.5, 16.2, 16.3, 16.1],
+      bob: [6.92, 6.91, 6.94, 6.93, 6.95, 6.92, 6.90, 6.91],
       ars: [1180, 1185, 1190, 1200, 1195, 1205, 1210, 1200],
       pen: [3.80, 3.82, 3.85, 3.83, 3.87, 3.84, 3.85, 3.82]
     },
-    // Ofertas del mercado
     offers: {
       buyCLP: [
         { merchant: 'Binance P2P', price: 940, volume24h: '1.2M USDT', spread: 0.5 },
@@ -487,13 +550,12 @@ function useMarketData() {
         { merchant: 'Bitso', price: 948, volume24h: '450K USDT', spread: 1.8 }
       ],
       sellBOB: [
-        { merchant: 'Binance P2P', price: 16.3, volume24h: '950K BOB', spread: 0.6 },
-        { merchant: 'LocalBitcoins', price: 16.1, volume24h: '720K BOB', spread: 1.1 },
-        { merchant: 'Paxful', price: 15.9, volume24h: '580K BOB', spread: 1.5 },
-        { merchant: 'Remitly', price: 15.7, volume24h: '380K BOB', spread: 2.2 }
+        { merchant: 'Binance P2P', price: 6.91, volume24h: '950K BOB', spread: 0.6 },
+        { merchant: 'LocalBitcoins', price: 6.95, volume24h: '720K BOB', spread: 1.1 },
+        { merchant: 'Paxful', price: 6.98, volume24h: '580K BOB', spread: 1.5 },
+        { merchant: 'Airtm', price: 7.05, volume24h: '380K BOB', spread: 2.2 }
       ]
     },
-    // Tendencias de mercado
     trends: {
       topGainers: [
         { country: 'Argentina', currency: 'ARS', change: '+2.3%' },
@@ -508,7 +570,6 @@ function useMarketData() {
   })
 
   useEffect(() => {
-    // Simular actualizaciones de datos en tiempo real
     const interval = setInterval(() => {
       setData(prev => {
         const randomChange = (min: number, max: number) => Math.random() * (max - min) + min
@@ -521,7 +582,7 @@ function useMarketData() {
           },
           priceHistory: {
             clp: [...prev.priceHistory.clp.slice(1), prev.priceHistory.clp[prev.priceHistory.clp.length - 1] + randomChange(-1, 1)],
-            bob: [...prev.priceHistory.bob.slice(1), prev.priceHistory.bob[prev.priceHistory.bob.length - 1] + randomChange(-0.05, 0.05)],
+            bob: [...prev.priceHistory.bob.slice(1), prev.priceHistory.bob[prev.priceHistory.bob.length - 1] + randomChange(-0.01, 0.01)],
             ars: [...prev.priceHistory.ars.slice(1), prev.priceHistory.ars[prev.priceHistory.ars.length - 1] + randomChange(-5, 5)],
             pen: [...prev.priceHistory.pen.slice(1), prev.priceHistory.pen[prev.priceHistory.pen.length - 1] + randomChange(-0.02, 0.02)]
           }
@@ -540,24 +601,16 @@ export default function FinancialDashboard() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const marketData = useMarketData()
 
-  // Fix hydration mismatch by setting time on client side only
   useEffect(() => {
     setLastUpdate(new Date())
-  }, [])
-
-  // Obtener tasas actuales para KPIs
-  const currentRates = useMemo(() => {
-    return COUNTRIES.reduce((acc, country) => {
-      acc[country.id] = country.rate
-      return acc
-    }, {} as Record<string, number>)
+    const timer = setInterval(() => setLastUpdate(new Date()), 1000);
+    return () => clearInterval(timer);
   }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-sans antialiased">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Header Dashboard */}
         <div className="bg-white border border-gray-100 rounded-2xl px-7 py-5 mb-8 shadow-lg">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
             <div>
@@ -567,11 +620,11 @@ export default function FinancialDashboard() {
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3.5 py-1.5 rounded-lg font-medium">
                 <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-                <span>Binance API</span>
+                <span>Live Data</span>
               </div>
               <div className="flex items-center gap-2 text-gray-600 bg-gray-100 px-3.5 py-1.5 rounded-lg font-medium">
                 <Clock className="w-4 h-4" />
-                <span>{lastUpdate ? lastUpdate.toLocaleTimeString() : '--:--:--'}</span>
+                <span>{lastUpdate ? lastUpdate.toLocaleTimeString('es-CL') : '--:--:--'}</span>
               </div>
               <div className="flex items-center gap-2 text-green-700 bg-green-100 px-3.5 py-1.5 rounded-lg font-medium">
                 <Activity className="w-4 h-4" />
@@ -581,7 +634,6 @@ export default function FinancialDashboard() {
           </div>
         </div>
 
-        {/* KPIs Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
           <KPICard
             title="Volumen Total 24h"
@@ -624,23 +676,20 @@ export default function FinancialDashboard() {
             color="yellow"
           />
           <KPICard
-            title="Capitalización de Mercado"
+            title="Capitalización"
             value={`$${(marketData.marketKPIs.marketCap / 1000000000).toFixed(2)}B`}
-            change="+1.8%"
+            subtitle="Mercado USDT"
             icon={Globe}
             trend="up"
             color="teal"
           />
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Currency Converter */}
           <div className="lg:col-span-2">
             <CurrencyConverter />
           </div>
 
-          {/* Market Trends */}
           <div className="lg:col-span-1 bg-white border border-gray-100 rounded-2xl p-7 shadow-lg">
             <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3">
               <PieChart className="w-6 h-6 text-green-600" />
@@ -673,7 +722,6 @@ export default function FinancialDashboard() {
           </div>
         </div>
 
-        {/* Price History Charts */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white border border-gray-100 rounded-2xl p-7 shadow-lg">
             <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3">
@@ -681,7 +729,7 @@ export default function FinancialDashboard() {
               Historial de Precios CLP
             </h3>
             <MiniChart data={marketData.priceHistory.clp} title="CLP/USDT" color="blue" />
-            <div className="text-base text-gray-600 mt-3">Último: {marketData.priceHistory.clp[marketData.priceHistory.clp.length - 1]}</div>
+            <div className="text-base text-gray-600 mt-3">Último: {marketData.priceHistory.clp[marketData.priceHistory.clp.length - 1].toFixed(2)}</div>
           </div>
           <div className="bg-white border border-gray-100 rounded-2xl p-7 shadow-lg">
             <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3">
@@ -689,7 +737,7 @@ export default function FinancialDashboard() {
               Historial de Precios BOB
             </h3>
             <MiniChart data={marketData.priceHistory.bob} title="BOB/USDT" color="green" />
-            <div className="text-base text-gray-600 mt-3">Último: {marketData.priceHistory.bob[marketData.priceHistory.bob.length - 1]}</div>
+            <div className="text-base text-gray-600 mt-3">Último: {marketData.priceHistory.bob[marketData.priceHistory.bob.length - 1].toFixed(2)}</div>
           </div>
           <div className="bg-white border border-gray-100 rounded-2xl p-7 shadow-lg">
             <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3">
@@ -697,7 +745,7 @@ export default function FinancialDashboard() {
               Historial de Precios ARS
             </h3>
             <MiniChart data={marketData.priceHistory.ars} title="ARS/USDT" color="yellow" />
-            <div className="text-base text-gray-600 mt-3">Último: {marketData.priceHistory.ars[marketData.priceHistory.ars.length - 1]}</div>
+            <div className="text-base text-gray-600 mt-3">Último: {marketData.priceHistory.ars[marketData.priceHistory.ars.length - 1].toFixed(0)}</div>
           </div>
           <div className="bg-white border border-gray-100 rounded-2xl p-7 shadow-lg">
             <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-3">
@@ -705,11 +753,10 @@ export default function FinancialDashboard() {
               Historial de Precios PEN
             </h3>
             <MiniChart data={marketData.priceHistory.pen} title="PEN/USDT" color="purple" />
-            <div className="text-base text-gray-600 mt-3">Último: {marketData.priceHistory.pen[marketData.priceHistory.pen.length - 1]}</div>
+            <div className="text-base text-gray-600 mt-3">Último: {marketData.priceHistory.pen[marketData.priceHistory.pen.length - 1].toFixed(2)}</div>
           </div>
         </div>
 
-        {/* Market Offers Tables */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
           <MarketTable title="Ofertas de Compra (CLP)" data={marketData.offers.buyCLP} type="buy" />
           <MarketTable title="Ofertas de Venta (BOB)" data={marketData.offers.sellBOB} type="sell" />
@@ -717,11 +764,9 @@ export default function FinancialDashboard() {
 
         <div className="mt-8 text-center text-sm text-gray-500 border-t border-gray-200 pt-6">
           <p>&copy; {new Date().getFullYear()} Desarrollado por <a href="https://www.altiusignite.com" target="_blank" rel="noopener noreferrer" className="font-bold bg-gradient-to-r from-cyan-400 to-green-400 text-transparent bg-clip-text hover:opacity-80 transition-opacity duration-200">Altius Ignite</a>. Todos los derechos reservados.</p>
-          <p className="mt-2">Datos proporcionados por Binance P2P y otras fuentes de mercado.</p>
+          <p className="mt-2">Datos proporcionados por fuentes de mercado simuladas. No representa asesoramiento financiero.</p>
         </div>
-      </div>
+    </div>
     </div>
   )
 }
-
-
